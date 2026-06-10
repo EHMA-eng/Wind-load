@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK Wind Load Calculator | BS EN 1991-1-4</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede9;
+  --text:#1a1a1a;--text2:#555550;--text3:#888780;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --info-bg:#e6f1fb;--info-text:#185fa5;--info-border:#b5d4f4;
+  --warn-bg:#faeeda;--warn-text:#854f0b;--warn-border:#fac775;
+  --success-bg:#eaf3de;--success-text:#3b6d11;--success-border:#c0dd97;
+  --danger-bg:#fcebeb;--danger-text:#a32d2d;--danger-border:#f7c1c1;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#2a2a28;--bg3:#333330;
+    --text:#e8e8e0;--text2:#a8a8a0;--text3:#666660;
+    --border:#3a3a38;--border2:#4a4a48;
+    --info-bg:#0c2a40;--info-text:#85b7eb;--info-border:#185fa5;
+    --warn-bg:#2a1f08;--warn-text:#fac775;--warn-border:#854f0b;
+    --success-bg:#1a2e0a;--success-text:#97c459;--success-border:#3b6d11;
+    --danger-bg:#2a0a0a;--danger-text:#f09595;--danger-border:#a32d2d;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;color:var(--text);background:var(--bg3);line-height:1.6;min-height:100vh}
+.app-header{background:var(--bg);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:1rem}
+.app-header h1{font-size:20px;font-weight:600;color:var(--text)}
+.app-header .subtitle{font-size:13px;color:var(--text2)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--info-bg);color:var(--info-text);border:1px solid var(--info-border);font-weight:500}
+.container{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
+.tab-row{display:flex;gap:2px;margin-bottom:1.5rem;background:var(--bg2);border-radius:var(--radius-lg);padding:4px;width:fit-content;border:1px solid var(--border)}
+.tab{padding:7px 20px;font-size:14px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);border-radius:var(--radius);transition:all 0.15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--bg);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.tab-content{display:none}.tab-content.active{display:block}
+h2{font-size:16px;font-weight:600;color:var(--text);margin:1.5rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+h2:first-child{margin-top:0}
+h3{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:0.75rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem}
+@media(max-width:768px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.comparison-grid{grid-template-columns:1fr!important}}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
+.field{margin-bottom:0.9rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-size:14px;font-family:inherit;transition:border-color 0.15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--info-text);box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.field .hint{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4}
+.btn-primary{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:11px 24px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:1rem;transition:opacity 0.15s;letter-spacing:0.01em}
+.btn-primary:hover{opacity:0.82}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s}
+.btn-secondary:hover{background:var(--bg2)}
+.metric-card{background:var(--bg2);border-radius:var(--radius);padding:0.85rem 1rem;border:1px solid var(--border)}
+.metric-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.metric-value{font-size:24px;font-weight:600;color:var(--text);line-height:1.2}
+.metric-unit{font-size:13px;font-weight:400;color:var(--text2);margin-left:3px}
+.warn-box{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:var(--radius);padding:0.75rem 1rem;font-size:13px;color:var(--warn-text);margin-bottom:1rem;line-height:1.5}
+.info-box{background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius);padding:0.75rem 1rem;font-size:13px;color:var(--info-text);margin-bottom:1rem;line-height:1.5}
+.success-box{background:var(--success-bg);border:1px solid var(--success-border);border-radius:var(--radius);padding:0.75rem 1rem;font-size:13px;color:var(--success-text);margin-bottom:1rem}
+.danger-box{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius);padding:0.75rem 1rem;font-size:13px;color:var(--danger-text);margin-bottom:1rem}
+.step-block{background:var(--bg2);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:0.5rem;border:1px solid var(--border)}
+.step-block .title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.step-block .eq{font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap}
+.zone-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:1rem}
+.zone-table th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;padding:8px 10px;border-bottom:2px solid var(--border)}
+.zone-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.zone-table tbody tr:last-child td{border-bottom:none}
+.zone-table tbody tr:hover td{background:var(--bg2)}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em}
+.tag-info{background:var(--info-bg);color:var(--info-text)}
+.tag-warn{background:var(--warn-bg);color:var(--warn-text)}
+.tag-success{background:var(--success-bg);color:var(--success-text)}
+.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.method-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem}
+.method-card.featured{border-color:var(--info-border);border-width:2px}
+.method-card h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:0.75rem}
+.section-divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+#lookup-status{font-size:12px;margin-top:6px;line-height:1.4}
+.print-row{display:flex;gap:8px;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap}
+.print-btn{background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s}
+.print-btn:hover{background:var(--bg2)}
+.report-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:0.25rem}
+.report-subtitle{font-size:13px;color:var(--text2);margin-bottom:1.25rem}
+
+/* Save/Load panel */
+.save-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1rem}
+.save-panel h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:0.75rem}
+.save-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0.75rem}
+.save-row label{font-size:13px;font-weight:500;color:var(--text2);min-width:120px}
+.save-row input{flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px}
+
+@media print{
+  .app-header,.tab-row,.btn-primary,.print-row,.save-panel,#inputs{display:none!important}
+  #report{display:block!important}
+  body{background:white}
+  .step-block,.zone-table,.metric-card,.method-card,.card{break-inside:avoid}
+  .warn-box{border:1px solid #ccc;background:#fffbe6;color:#7a4e00}
+  .info-box{border:1px solid #b0cce8;background:#e8f4fc;color:#1a4f80}
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>UK Wind Load Calculator</h1>
+    <div class="subtitle">BS EN 1991-1-4 with UK National Annex &nbsp;·&nbsp; Vertical walls, flat, mono &amp; duopitch roofs</div>
+  </div>
+  <span class="badge">Preliminary design only</span>
+</div>
+
+<div class="container">
+
+<div class="tab-row">
+  <button class="tab active" onclick="showTab('inputs',this)">&#9998; Inputs</button>
+  <button class="tab" onclick="showTab('report',this)" id="report-tab">&#128196; Report</button>
+</div>
+
+<!-- ============================================================ INPUTS ============================================================ -->
+<div id="inputs" class="tab-content active">
+
+<div class="warn-box">&#9888; Results are for <strong>preliminary design guidance only</strong>. Always verify v<sub>b,0</sub> against UK NA Figure NA.1 and confirm with a qualified structural engineer.</div>
+
+<h2>1 &mdash; Site details</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>Location &amp; wind speed</h3>
+    <div class="field">
+      <label>Town or postcode</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="location" placeholder="e.g. Birmingham or B1 1AA" style="flex:1">
+        <button class="btn-secondary" onclick="lookupLocation()">Look up</button>
+      </div>
+      <div id="lookup-status"></div>
+    </div>
+    <div class="field">
+      <label>Fundamental basic wind velocity v<sub>b,0</sub> (m/s)</label>
+      <input type="number" id="vb0" value="23" step="0.5" min="18" max="32">
+      <div class="hint">From UK NA Figure NA.1 &mdash; auto-estimated above, <strong>verify against map before use</strong></div>
+    </div>
+    <div class="field">
+      <label>Altitude above sea level A (m)</label>
+      <input type="number" id="altitude" value="50" step="1" min="0">
+    </div>
+  </div>
+  <div class="card">
+    <h3>Terrain &amp; exposure</h3>
+    <div class="field">
+      <label>Distance to shore (km)</label>
+      <input type="number" id="distShore" value="50" step="1" min="0">
+      <div class="hint">UK NA NA.2.11 &mdash; affects terrain category applied to c<sub>r</sub>(z). 0 = at coastline.</div>
+    </div>
+    <div class="field">
+      <label>Site inside a town?</label>
+      <select id="inTown">
+        <option value="no">No &mdash; open country, farmland or edge of town</option>
+        <option value="yes">Yes &mdash; well within a town or city</option>
+      </select>
+      <div class="hint">UK NA NA.2.17 &mdash; applies displacement height h<sub>dis</sub> and Cat III roughness</div>
+    </div>
+    <div class="field">
+      <label>Terrain category</label>
+      <select id="terrain">
+        <option value="0">0 &mdash; Sea, coastal exposure to open sea</option>
+        <option value="I">I &mdash; Lakes or flat country, negligible vegetation</option>
+        <option value="II" selected>II &mdash; Low vegetation, isolated obstacles</option>
+        <option value="III">III &mdash; Regular cover of vegetation or buildings</option>
+        <option value="IV">IV &mdash; Built-up, &ge;15% covered by buildings &gt;15m</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Orography factor c<sub>o</sub></label>
+      <input type="number" id="co" value="1.0" step="0.01" min="1.0" max="2.0">
+      <div class="hint">1.0 for flat terrain; &gt;1.0 for hills/escarpments per BS EN 1991-1-4 §4.3.3</div>
+    </div>
+  </div>
+</div>
+
+<h2>2 &mdash; Building geometry</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>Plan dimensions</h3>
+    <div class="field"><label>Length b (m) &mdash; parallel to wind</label><input type="number" id="bldgL" value="20" step="0.5" min="1"></div>
+    <div class="field"><label>Width d (m) &mdash; perpendicular to wind</label><input type="number" id="bldgW" value="12" step="0.5" min="1"></div>
+    <div class="field"><label>Eaves / parapet height h (m)</label><input type="number" id="bldgH" value="8" step="0.5" min="1"></div>
+  </div>
+  <div class="card">
+    <h3>Roof</h3>
+    <div class="field">
+      <label>Roof type</label>
+      <select id="roofType" onchange="toggleRoofInputs()">
+        <option value="flat">Flat roof</option>
+        <option value="mono">Monopitch roof</option>
+        <option value="duo">Duopitch roof</option>
+      </select>
+    </div>
+    <div id="pitchField" class="field" style="display:none">
+      <label>Roof pitch &alpha; (degrees)</label>
+      <input type="number" id="pitch" value="20" step="1" min="1" max="75">
+    </div>
+    <div id="monoDir" class="field" style="display:none">
+      <label>Critical wind direction</label>
+      <select id="monoWind">
+        <option value="windward">Wind onto low eave (windward / upslope)</option>
+        <option value="leeward">Wind onto high eave (leeward / downslope)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Structural factor c<sub>s</sub>c<sub>d</sub></label>
+      <input type="number" id="cscd" value="1.0" step="0.01" min="0.8" max="1.1">
+      <div class="hint">1.0 conservative for h &lt; 15 m per UK NA</div>
+    </div>
+  </div>
+</div>
+
+<h2>3 &mdash; Internal pressure &amp; overall force method</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>Internal pressure coefficient c<sub>pi</sub></h3>
+    <div class="field">
+      <label>Opening condition</label>
+      <select id="cpiType">
+        <option value="closed">Closed building (no dominant opening)</option>
+        <option value="open_windward">Dominant opening on windward face</option>
+        <option value="open_leeward">Dominant opening on leeward face</option>
+      </select>
+      <div class="hint">BS EN 1991-1-4 §7.2.9</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Overall force coefficient</h3>
+    <div class="field">
+      <label>Overall c<sub>f</sub> method</label>
+      <select id="cfMethod">
+        <option value="ukna">UK NA NA.2.21 &mdash; whole-building c<sub>f</sub></option>
+        <option value="table">BS EN Table 7.1 c<sub>f,0</sub> with end-effect &#936;<sub>&lambda;</sub></option>
+      </select>
+      <div class="hint">Produces total horizontal wind force F<sub>w</sub> for frame design</div>
+    </div>
+  </div>
+</div>
+
+<h2>4 &mdash; Save / load calculation</h2>
+<div class="save-panel">
+  <h3>&#128190; Save inputs as JSON file</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="text" id="saveFilename" placeholder="filename (e.g. warehouse-phase1)" style="flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+    <button class="btn-secondary" onclick="saveInputs()">&#8595; Download JSON</button>
+  </div>
+  <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+  <h3>&#128194; Load inputs from JSON file</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="file" id="loadFile" accept=".json" onchange="loadInputs(event)" style="font-size:13px;color:var(--text2)">
+    <span style="font-size:12px;color:var(--text3)">Previously saved .json file</span>
+  </div>
+</div>
+
+<button class="btn-primary" onclick="calculate()">&#9654;&#xFE0E; Calculate wind loads</button>
+
+</div><!-- /inputs -->
+
+<!-- ============================================================ REPORT ============================================================ -->
+<div id="report" class="tab-content">
+  <div id="report-content">
+    <div class="info-box">Complete the inputs and click <strong>Calculate wind loads</strong> to generate the full report.</div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ── Terrain parameters (BS EN 1991-1-4 Table 4.1) ──────────────────────────
+const TC={
+  '0' :{z0:0.003,zmin:1,  kr:0.156},
+  'I' :{z0:0.01, zmin:1,  kr:0.162},
+  'II':{z0:0.05, zmin:2,  kr:0.190},
+  'III':{z0:0.3, zmin:5,  kr:0.215},
+  'IV':{z0:1.0,  zmin:10, kr:0.234}
+};
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function showTab(t,btn){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+function toggleRoofInputs(){
+  const rt=document.getElementById('roofType').value;
+  document.getElementById('pitchField').style.display=(rt==='flat')?'none':'block';
+  document.getElementById('monoDir').style.display=(rt==='mono')?'block':'none';
+}
+
+// ── Geocode & vb,0 estimate ────────────────────────────────────────────────
+async function lookupLocation(){
+  const loc=document.getElementById('location').value.trim();
+  const s=document.getElementById('lookup-status');
+  if(!loc){s.style.color='var(--warn-text)';s.textContent='Enter a location first.';return;}
+  s.style.color='var(--text3)';s.textContent='Looking up\u2026';
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(loc+', UK')}&format=json&limit=1&countrycodes=gb`);
+    const d=await res.json();
+    if(!d.length){s.style.color='var(--warn-text)';s.textContent='Location not found \u2014 check spelling or try a nearby town.';return;}
+    const lat=parseFloat(d[0].lat),lon=parseFloat(d[0].lon);
+    const vb=estimateVb0(lat,lon);
+    const ds=estimateDistShore(lat,lon);
+    document.getElementById('vb0').value=vb;
+    document.getElementById('distShore').value=ds;
+    const name=d[0].display_name.split(',').slice(0,2).join(',');
+    s.style.color='var(--success-text)';
+    s.innerHTML=`&#10003; ${name} (${lat.toFixed(2)}&deg;N, ${Math.abs(lon).toFixed(2)}&deg;${lon<0?'W':'E'}) \u2014 estimated v<sub>b,0</sub> = <strong>${vb} m/s</strong>, distance to shore &asymp; ${ds} km. Verify against NA Figure NA.1.`;
+  }catch(e){s.style.color='var(--warn-text)';s.textContent='Lookup failed \u2014 check internet connection or enter values manually.';}
+}
+
+function estimateVb0(lat,lon){
+  // UK NA Figure NA.1 approximation based on published contours
+  let vb=23;
+  if(lat>57.5){vb=28;if(lon<-4.5)vb=30;}           // Highlands / NW Scotland / islands
+  else if(lat>56){vb=26;if(lon<-3.5)vb=28;}         // Central Scotland
+  else if(lat>55&&lat<=56){vb=25;if(lon<-3)vb=27;}  // S Scotland / N England (upland)
+  else if(lat>53.5&&lat<=55){vb=24;if(lon<-2.5)vb=26;} // N England
+  else if(lat>52&&lat<=53.5){vb=23;}                 // Midlands
+  else if(lat>51.5&&lat<=52){vb=22;}                 // S Midlands
+  else{vb=22;}                                       // SE England
+  // Wales uplift
+  if(lon<-3.5&&lat>51.3&&lat<53.5){vb=Math.max(vb,25);if(lon<-4.2)vb=Math.max(vb,27);}
+  // Coastal uplift
+  const ds=estimateDistShore(lat,lon);
+  if(ds<5)vb=Math.min(30,vb+2);
+  else if(ds<20)vb=Math.min(30,vb+1);
+  return vb;
+}
+
+function estimateDistShore(lat,lon){
+  // Rough great-circle approximation to nearest UK coast
+  const R=6371;
+  const toRad=d=>d*Math.PI/180;
+  // Key coastal reference points [lat,lon]
+  const coasts=[
+    [58.65,-3.1],[57.9,-5.1],[56.4,-5.5],[55.0,-5.1],[54.6,-1.2],
+    [53.4,-3.0],[52.8,-4.7],[51.6,-5.0],[50.1,-5.5],[50.0,-0.2],
+    [51.4,1.4],[52.9,1.7],[53.8,0.2],[54.5,-0.6],[55.0,-1.5],
+    [51.5,-3.2],[53.3,-4.6]
+  ];
+  let minD=999;
+  for(const [clat,clon] of coasts){
+    const dlat=toRad(lat-clat),dlon=toRad(lon-clon);
+    const a=Math.sin(dlat/2)**2+Math.cos(toRad(lat))*Math.cos(toRad(clat))*Math.sin(dlon/2)**2;
+    const d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    if(d<minD)minD=d;
+  }
+  return Math.max(0,Math.round(minD));
+}
+
+// ── cr(z) roughness factor ─────────────────────────────────────────────────
+function crz(z,tcKey){
+  const p=TC[tcKey];
+  return p.kr*Math.log(Math.max(z,p.zmin)/p.z0);
+}
+
+// ── Internal pressure ──────────────────────────────────────────────────────
+function getCpi(type){
+  if(type==='open_windward')return{pos:0.7,neg:0.7,label:'+0.7 (dominant opening, windward face)'};
+  if(type==='open_leeward') return{pos:-0.5,neg:-0.5,label:'\u22120.5 (dominant opening, leeward face)'};
+  return{pos:0.2,neg:-0.3,label:'+0.2 / \u22120.3 (closed building)'};
+}
+
+// ── Roof zone tables ───────────────────────────────────────────────────────
+function flatRoofZones(){
+  return[
+    {zone:'F',cpe:-1.8,note:'Corner zone (sharp eaves, Table 7.2)'},
+    {zone:'G',cpe:-1.2,note:'Edge zone'},
+    {zone:'H',cpe:-0.7,note:'Central zone'},
+    {zone:'I+',cpe:+0.2,note:'Overall (pressure)'},
+    {zone:'I\u2212',cpe:-0.2,note:'Overall (suction)'}
+  ];
+}
+function monoRoofZones(alpha,dir){
+  if(dir==='windward'){
+    if(alpha<=5) return[{zone:'F',cpe:-1.7},{zone:'G',cpe:-1.2},{zone:'H',cpe:-0.6},{zone:'F\u2019',cpe:-2.5,note:'upwind edge'},{zone:'G\u2019',cpe:-2.0,note:'upwind edge'},{zone:'H\u2019',cpe:-1.2,note:'upwind edge'}];
+    if(alpha<=10)return[{zone:'F',cpe:-1.7},{zone:'G',cpe:-1.2},{zone:'H',cpe:-0.6},{zone:'F\u2019',cpe:-2.5,note:'upwind'},{zone:'G\u2019',cpe:-2.0,note:'upwind'},{zone:'H\u2019',cpe:-1.2,note:'upwind'}];
+    if(alpha<=15)return[{zone:'F',cpe:-0.9},{zone:'G',cpe:-0.8},{zone:'H',cpe:-0.3},{zone:'F\u2019',cpe:-2.0,note:'upwind'},{zone:'G\u2019',cpe:-1.5,note:'upwind'},{zone:'H\u2019',cpe:-0.6,note:'upwind'}];
+    if(alpha<=30)return[{zone:'F',cpe:'-0.5/+0.7'},{zone:'G',cpe:'-0.5/+0.7'},{zone:'H',cpe:'-0.2/+0.4'}];
+    return              [{zone:'F',cpe:'+0.7'},{zone:'G',cpe:'+0.7'},{zone:'H',cpe:'+0.6'}];
+  } else {
+    return[{zone:'F',cpe:-2.1,note:'leeward'},{zone:'G',cpe:-1.8,note:'leeward'},{zone:'H',cpe:-0.6,note:'leeward'}];
+  }
+}
+function duoRoofZones(alpha){
+  if(alpha<=5) return[{zone:'F',cpe:'-1.7/+0.0'},{zone:'G',cpe:'-1.2/+0.0'},{zone:'H',cpe:'-0.6/+0.0'},{zone:'I',cpe:-0.6},{zone:'J',cpe:-0.6}];
+  if(alpha<=15)return[{zone:'F',cpe:'-0.9/+0.2'},{zone:'G',cpe:'-0.8/+0.2'},{zone:'H',cpe:'-0.3/+0.2'},{zone:'I',cpe:-0.4},{zone:'J',cpe:-1.0}];
+  if(alpha<=30)return[{zone:'F',cpe:'-0.5/+0.7'},{zone:'G',cpe:'-0.5/+0.7'},{zone:'H',cpe:'-0.2/+0.4'},{zone:'I',cpe:'-0.4/+0.0'},{zone:'J',cpe:-0.5}];
+  if(alpha<=45)return[{zone:'F',cpe:'-0.0/+0.7'},{zone:'G',cpe:'-0.0/+0.7'},{zone:'H',cpe:'-0.0/+0.6'},{zone:'I',cpe:'-0.2/+0.0'},{zone:'J',cpe:-0.3}];
+  return              [{zone:'F',cpe:'+0.7'},{zone:'G',cpe:'+0.7'},{zone:'H',cpe:'+0.6'},{zone:'I',cpe:'+0.2'},{zone:'J',cpe:-0.3}];
+}
+
+// ── Net zone pressures ─────────────────────────────────────────────────────
+function netPressures(zones,qp,cpi){
+  return zones.map(z=>{
+    const cv=typeof z.cpe==='number'?z.cpe:null;
+    return{
+      ...z,
+      net_max:cv!==null?+(qp*(cv-Math.min(cpi.pos,cpi.neg))).toFixed(4):null,
+      net_min:cv!==null?+(qp*(cv-Math.max(cpi.pos,cpi.neg))).toFixed(4):null
+    };
+  });
+}
+
+// ── Main calculation ───────────────────────────────────────────────────────
+function calculate(){
+  const vb0   =+document.getElementById('vb0').value;
+  const alt   =+document.getElementById('altitude').value;
+  const tc    = document.getElementById('terrain').value;
+  const co    =+document.getElementById('co').value;
+  const inTown= document.getElementById('inTown').value==='yes';
+  const dist  =+document.getElementById('distShore').value;
+  const L     =+document.getElementById('bldgL').value;
+  const W     =+document.getElementById('bldgW').value;
+  const H     =+document.getElementById('bldgH').value;
+  const roofType=document.getElementById('roofType').value;
+  const alpha =+document.getElementById('pitch').value||0;
+  const monoDir=document.getElementById('monoWind').value;
+  const cscd  =+document.getElementById('cscd').value;
+  const cpiType=document.getElementById('cpiType').value;
+
+  // ── Step 1: vb ──────────────────────────────────────────────────────────
+  const calt  = vb0<=24 ? 1+0.001*alt : 1+0.001*alt*Math.pow(24/vb0,2);
+  const cdir=1.0, cseason=1.0;
+  const vb    = vb0*cdir*cseason*calt;
+  const rho   = 1.226;
+  const qb    = 0.5*rho*vb*vb/1000; // kN/m²
+
+  // ── Step 2: terrain for cr(z) with UK NA adjustments ────────────────────
+  // NA.2.11: proximity to shore may upgrade terrain category
+  let tcEff=tc;
+  if(dist<1 &&['I','II','III','IV'].includes(tc)) tcEff='0';
+  else if(dist<10&&['III','IV'].includes(tc))    tcEff='II';
+  else if(dist<10&&tc==='II')                    tcEff='I';
+
+  // NA.2.17: inside a town => displacement height + Cat III roughness
+  let hdis=0;
+  let tcRough=tcEff;
+  if(inTown){
+    const hAve=15; // assumed average surrounding building height
+    hdis=Math.min(0.6*H,0.8*hAve);
+    if(['0','I','II'].includes(tcRough)) tcRough='III';
+  }
+
+  const p   = TC[tcRough];
+  const ze  = Math.max(H-hdis, p.zmin);
+  const cr  = p.kr*Math.log(ze/p.z0);
+  const Iv  = p.kr/(co*Math.log(ze/p.z0));
+  const vm  = cr*co*vb;
+  const ce  = Math.pow(cr*co,2)*(1+7*Iv);
+  const qp  = ce*qb;
+
+  // ── Step 3: internal pressure ────────────────────────────────────────────
+  const cpi = getCpi(cpiType);
+
+  // ── Step 4: wall zones ───────────────────────────────────────────────────
+  const hd  = H/W;
+  const cpeD= hd<0.25?0.7:(hd<1?0.7+(0.8-0.7)*(hd-0.25)/0.75:0.8);
+  const cpeE= hd<0.25?-0.3:(hd<1?-0.3+(-0.5+0.3)*(hd-0.25)/0.75:-0.5);
+  const b_ref=Math.max(L,W);
+  const e   = Math.min(b_ref,2*H);
+  const zA  = Math.min(0.2*e,b_ref);
+  const zB  = Math.max(0,Math.min(0.8*e,b_ref)-zA);
+  const zC  = Math.max(0,b_ref-e);
+
+  const wallZones=[
+    {zone:'D',desc:'Windward wall',cpe:cpeD},
+    {zone:'E',desc:'Leeward wall', cpe:cpeE},
+    {zone:'A',desc:`Side wall \u2014 edge zone (${zA.toFixed(2)} m)`,cpe:-1.2},
+    {zone:'B',desc:`Side wall \u2014 mid zone (${zB.toFixed(2)} m)`,cpe:-0.8}
+  ];
+  if(zC>0) wallZones.push({zone:'C',desc:`Side wall \u2014 far zone (${zC.toFixed(2)} m)`,cpe:-0.5});
+  const wallNet=netPressures(wallZones,qp,cpi);
+
+  const wD  = qp*(cpeD-cpi.neg);
+  const wE  = qp*(cpeE-cpi.pos);
+  const Fw_zone_x =(wD+Math.abs(wE))*H*L*cscd;
+  const Fw_zone_y =(wD+Math.abs(wE))*H*W*cscd;
+
+  // ── Step 5: roof ─────────────────────────────────────────────────────────
+  const hRidge= roofType==='flat'?H : H+Math.tan(alpha*Math.PI/180)*(W/2);
+  const hr    = roofType==='flat'?H:hRidge;
+  const ze_r  = Math.max(hr-hdis,p.zmin);
+  const cr_r  = p.kr*Math.log(ze_r/p.z0);
+  const Iv_r  = p.kr/(co*Math.log(ze_r/p.z0));
+  const qp_r  = Math.pow(cr_r*co,2)*(1+7*Iv_r)*qb;
+
+  const rawRoof= roofType==='flat'?flatRoofZones():(roofType==='mono'?monoRoofZones(alpha,monoDir):duoRoofZones(alpha));
+  const roofNet=netPressures(rawRoof,qp_r,cpi);
+
+  // ── Step 6: overall force coefficient (UK NA NA.2.21) ────────────────────
+  const cf0   = cpeD+Math.abs(cpeE);
+  const b_min = Math.min(L,W);
+  const lam   = Math.min(2*H/b_min,70);
+  const psi   = lam<=2?0.85:(lam<=50?0.85+(1.0-0.85)*(lam-2)/48:1.0);
+  const Aref_x= H*L;
+  const Aref_y= H*W;
+  const Fw_cf_x= cf0*psi*qp*Aref_x*cscd;
+  const Fw_cf_y= cf0*psi*qp*Aref_y*cscd;
+
+  // ── Build report ──────────────────────────────────────────────────────────
+  const roofLabel=roofType==='flat'?'Flat roof':roofType==='mono'?`Monopitch roof (${alpha}&deg;, ${monoDir==='windward'?'wind on low eave':'wind on high eave'})`:
+    `Duopitch roof (${alpha}&deg;)`;
+  const locName=document.getElementById('location').value||'Not specified';
+  const dateStr=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+
+  const zoneTableRows=(zones,numFmt)=>zones.map(z=>`
+    <tr>
+      <td><strong>${z.zone}</strong></td>
+      <td>${z.desc||z.note||'&mdash;'}</td>
+      <td>${typeof z.cpe==='number'?z.cpe.toFixed(2):z.cpe}</td>
+      <td>${z.net_max!==null?z.net_max.toFixed(3):'&mdash;'}</td>
+      <td>${z.net_min!==null&&z.net_min!==z.net_max?z.net_min.toFixed(3):'&mdash;'}</td>
+    </tr>`).join('');
+
+  const html=`
+  <div class="print-row">
+    <button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+    <button class="print-btn" onclick="downloadReport()">&#8595; Download HTML report</button>
+    <button class="print-btn" onclick="showTab('inputs',document.querySelectorAll('.tab')[0])">&#8592; Edit inputs</button>
+  </div>
+
+  <div class="report-title">Wind load calculation report</div>
+  <div class="report-subtitle">BS EN 1991-1-4 &bull; UK National Annex &bull; ${dateStr} &bull; Location: ${locName}</div>
+
+  <div class="grid4">
+    <div class="metric-card"><div class="metric-label">v<sub>b</sub> basic wind vel.</div><div class="metric-value">${vb.toFixed(1)}<span class="metric-unit">m/s</span></div></div>
+    <div class="metric-card"><div class="metric-label">q<sub>p</sub> peak vel. pressure</div><div class="metric-value">${qp.toFixed(3)}<span class="metric-unit">kN/m&sup2;</span></div></div>
+    <div class="metric-card"><div class="metric-label">F<sub>w</sub> zone method</div><div class="metric-value">${Fw_zone_x.toFixed(1)}<span class="metric-unit">kN</span></div></div>
+    <div class="metric-card"><div class="metric-label">F<sub>w</sub> c<sub>f</sub> method</div><div class="metric-value">${Fw_cf_x.toFixed(1)}<span class="metric-unit">kN</span></div></div>
+  </div>
+
+  <h2>Step 1 &mdash; Basic wind velocity (UK NA NA.2.5)</h2>
+  <div class="step-block"><div class="title">Altitude correction factor c<sub>alt</sub></div>
+  <div class="eq">${vb0<=24?`c_alt = 1 + 0.001 \u00d7 A = 1 + 0.001 \u00d7 ${alt}`:
+    `c_alt = 1 + 0.001 \u00d7 A \u00d7 (24/v_{b,0})\u00b2 = 1 + 0.001 \u00d7 ${alt} \u00d7 (24/${vb0})\u00b2`
+  } = ${calt.toFixed(4)}</div></div>
+  <div class="step-block"><div class="title">Basic wind velocity v<sub>b</sub></div>
+  <div class="eq">v_b = v_{b,0} \u00d7 c_dir \u00d7 c_season \u00d7 c_alt
+    = ${vb0} \u00d7 ${cdir.toFixed(1)} \u00d7 ${cseason.toFixed(1)} \u00d7 ${calt.toFixed(4)}
+    = ${vb.toFixed(3)} m/s</div></div>
+  <div class="step-block"><div class="title">Basic velocity pressure q<sub>b</sub></div>
+  <div class="eq">q_b = \u00bd \u00d7 \u03c1 \u00d7 v_b\u00b2 = 0.5 \u00d7 1.226 \u00d7 ${vb.toFixed(3)}\u00b2 = ${qb.toFixed(4)} kN/m\u00b2</div></div>
+
+  <h2>Step 2 &mdash; Terrain roughness &amp; peak velocity pressure</h2>
+  ${inTown?`<div class="info-box"><strong>UK NA NA.2.17 (inside town):</strong> Roughness treated as Cat III. Displacement height h<sub>dis</sub> = ${hdis.toFixed(2)} m applied. Effective reference height z<sub>e</sub> = h &minus; h<sub>dis</sub> = ${H} &minus; ${hdis.toFixed(2)} = ${ze.toFixed(2)} m.</div>`:''}
+  ${dist<20?`<div class="info-box"><strong>UK NA NA.2.11 (proximity to shore):</strong> Site is ${dist} km from shore. Terrain category for c<sub>r</sub>(z) limited to Cat ${tcEff} (input category was ${tc}).</div>`:''}
+  <div class="step-block"><div class="title">Terrain parameters &mdash; Category ${tcRough}</div>
+  <div class="eq">z\u2080 = ${p.z0} m &nbsp;|&nbsp; z_min = ${p.zmin} m &nbsp;|&nbsp; k_r = ${p.kr}</div></div>
+  <div class="step-block"><div class="title">Roughness factor c<sub>r</sub>(z<sub>e</sub>)</div>
+  <div class="eq">c_r(z_e) = k_r \u00d7 ln(z_e / z\u2080) = ${p.kr} \u00d7 ln(${ze.toFixed(3)} / ${p.z0}) = ${cr.toFixed(4)}</div></div>
+  <div class="step-block"><div class="title">Turbulence intensity I<sub>v</sub>(z<sub>e</sub>)</div>
+  <div class="eq">I_v(z_e) = k_r / [c_o \u00d7 ln(z_e / z\u2080)] = ${p.kr} / [${co} \u00d7 ln(${ze.toFixed(3)} / ${p.z0})] = ${Iv.toFixed(4)}</div></div>
+  <div class="step-block"><div class="title">Mean wind velocity v<sub>m</sub>(z<sub>e</sub>)</div>
+  <div class="eq">v_m = c_r(z_e) \u00d7 c_o \u00d7 v_b = ${cr.toFixed(4)} \u00d7 ${co} \u00d7 ${vb.toFixed(3)} = ${vm.toFixed(3)} m/s</div></div>
+  <div class="step-block"><div class="title">Exposure factor c<sub>e</sub>(z<sub>e</sub>)</div>
+  <div class="eq">c_e(z_e) = [c_r \u00d7 c_o]\u00b2 \u00d7 (1 + 7\u00d7I_v) = ${(cr*co).toFixed(4)}\u00b2 \u00d7 (1 + 7\u00d7${Iv.toFixed(4)}) = ${ce.toFixed(4)}</div></div>
+  <div class="step-block"><div class="title">Peak velocity pressure q<sub>p</sub>(z<sub>e</sub>) &mdash; UK NA NA.2.18</div>
+  <div class="eq">q_p(z_e) = c_e(z_e) \u00d7 q_b = ${ce.toFixed(4)} \u00d7 ${qb.toFixed(4)} = ${qp.toFixed(4)} kN/m\u00b2</div></div>
+
+  <h2>Step 3 &mdash; Internal pressure coefficient</h2>
+  <div class="step-block"><div class="title">Opening condition: ${document.getElementById('cpiType').options[document.getElementById('cpiType').selectedIndex].text}</div>
+  <div class="eq">c_pi = ${cpi.label}</div></div>
+
+  <h2>Step 4 &mdash; Wall pressures (zone-by-zone method, BS EN 1991-1-4 &sect;7.2)</h2>
+  <div class="step-block"><div class="title">h/d ratio &amp; reference length e</div>
+  <div class="eq">h/d = ${H} / ${W} = ${hd.toFixed(3)}
+e = min(b, 2h) = min(${b_ref}, ${2*H}) = ${e.toFixed(2)} m
+C_pe,D = ${cpeD.toFixed(3)} (interpolated, Table 7.1)
+C_pe,E = ${cpeE.toFixed(3)} (interpolated, Table 7.1)</div></div>
+  <table class="zone-table">
+    <thead><tr><th>Zone</th><th>Description</th><th>C<sub>pe,10</sub></th><th>w<sub>e,net,max</sub> (kN/m&sup2;)</th><th>w<sub>e,net,min</sub> (kN/m&sup2;)</th></tr></thead>
+    <tbody>${zoneTableRows(wallNet)}</tbody>
+  </table>
+  <div class="step-block"><div class="title">Total horizontal force (zone method)</div>
+  <div class="eq">F_w,x = (w_D + |w_E|) \u00d7 h \u00d7 b \u00d7 c_sc_d
+       = (${wD.toFixed(4)} + ${Math.abs(wE).toFixed(4)}) \u00d7 ${H} \u00d7 ${L} \u00d7 ${cscd}
+       = ${Fw_zone_x.toFixed(3)} kN  [longitudinal]
+
+F_w,y = (w_D + |w_E|) \u00d7 h \u00d7 d \u00d7 c_sc_d
+       = (${wD.toFixed(4)} + ${Math.abs(wE).toFixed(4)}) \u00d7 ${H} \u00d7 ${W} \u00d7 ${cscd}
+       = ${Fw_zone_y.toFixed(3)} kN  [transverse]</div></div>
+
+  <h2>Step 5 &mdash; Roof pressures (${roofLabel})</h2>
+  <div class="step-block"><div class="title">Reference height &amp; q<sub>p</sub> at roof</div>
+  <div class="eq">z_r = ${hr.toFixed(2)} m  (ridge / eaves)
+q_p,roof = ${qp_r.toFixed(4)} kN/m\u00b2</div></div>
+  <table class="zone-table">
+    <thead><tr><th>Zone</th><th>Note</th><th>C<sub>pe,10</sub></th><th>w<sub>e,net,max</sub> (kN/m&sup2;)</th><th>w<sub>e,net,min</sub> (kN/m&sup2;)</th></tr></thead>
+    <tbody>${zoneTableRows(roofNet)}</tbody>
+  </table>
+
+  <h2>Step 6 &mdash; Overall force coefficient method (UK NA NA.2.21)</h2>
+  <div class="comparison-grid">
+    <div class="method-card">
+      <h3>Zone-by-zone wall totals</h3>
+      <div class="step-block"><div class="title">Longitudinal &amp; transverse</div>
+      <div class="eq">F_w,x (zone) = ${Fw_zone_x.toFixed(3)} kN
+F_w,y (zone) = ${Fw_zone_y.toFixed(3)} kN</div></div>
+    </div>
+    <div class="method-card featured">
+      <h3>Overall c<sub>f</sub> &mdash; UK NA NA.2.21</h3>
+      <div class="step-block"><div class="title">Overall force coefficient c<sub>f,0</sub></div>
+      <div class="eq">c_{f,0} = C_{pe,D} + |C_{pe,E}|
+       = ${cpeD.toFixed(3)} + ${Math.abs(cpeE).toFixed(3)}
+       = ${cf0.toFixed(3)}</div></div>
+      <div class="step-block"><div class="title">End-effect factor &psi;<sub>&lambda;</sub></div>
+      <div class="eq">\u03bb = 2h / min(b,d) = 2\u00d7${H} / ${b_min} = ${lam.toFixed(3)} (capped at 70)
+\u03c8_\u03bb = ${psi.toFixed(4)}</div></div>
+      <div class="step-block"><div class="title">Reference areas</div>
+      <div class="eq">A_ref,x = h \u00d7 b = ${H} \u00d7 ${L} = ${Aref_x.toFixed(2)} m\u00b2
+A_ref,y = h \u00d7 d = ${H} \u00d7 ${W} = ${Aref_y.toFixed(2)} m\u00b2</div></div>
+      <div class="step-block"><div class="title">Total wind force F<sub>w</sub></div>
+      <div class="eq">F_w,x = c_{f,0} \u00d7 \u03c8_\u03bb \u00d7 q_p \u00d7 A_ref,x \u00d7 c_sc_d
+       = ${cf0.toFixed(3)} \u00d7 ${psi.toFixed(4)} \u00d7 ${qp.toFixed(4)} \u00d7 ${Aref_x.toFixed(2)} \u00d7 ${cscd}
+       = ${Fw_cf_x.toFixed(3)} kN  [longitudinal]
+
+F_w,y = ${cf0.toFixed(3)} \u00d7 ${psi.toFixed(4)} \u00d7 ${qp.toFixed(4)} \u00d7 ${Aref_y.toFixed(2)} \u00d7 ${cscd}
+       = ${Fw_cf_y.toFixed(3)} kN  [transverse]</div></div>
+    </div>
+  </div>
+
+  <h2>Summary</h2>
+  <div class="grid4">
+    <div class="metric-card"><div class="metric-label">v<sub>b,0</sub> input</div><div class="metric-value">${vb0.toFixed(1)}<span class="metric-unit">m/s</span></div></div>
+    <div class="metric-card"><div class="metric-label">v<sub>b</sub> design</div><div class="metric-value">${vb.toFixed(2)}<span class="metric-unit">m/s</span></div></div>
+    <div class="metric-card"><div class="metric-label">q<sub>p</sub></div><div class="metric-value">${qp.toFixed(3)}<span class="metric-unit">kN/m&sup2;</span></div></div>
+    <div class="metric-card"><div class="metric-label">Windward w<sub>e</sub></div><div class="metric-value">${wD.toFixed(3)}<span class="metric-unit">kN/m&sup2;</span></div></div>
+    <div class="metric-card"><div class="metric-label">Leeward w<sub>e</sub></div><div class="metric-value">${wE.toFixed(3)}<span class="metric-unit">kN/m&sup2;</span></div></div>
+    <div class="metric-card"><div class="metric-label">F<sub>w,x</sub> zone</div><div class="metric-value">${Fw_zone_x.toFixed(1)}<span class="metric-unit">kN</span></div></div>
+    <div class="metric-card"><div class="metric-label">F<sub>w,x</sub> c<sub>f</sub></div><div class="metric-value">${Fw_cf_x.toFixed(1)}<span class="metric-unit">kN</span></div></div>
+    <div class="metric-card"><div class="metric-label">F<sub>w,y</sub> c<sub>f</sub></div><div class="metric-value">${Fw_cf_y.toFixed(1)}<span class="metric-unit">kN</span></div></div>
+  </div>
+
+  <div class="warn-box" style="margin-top:1.5rem">
+    <strong>&#9888; Disclaimer:</strong> This calculation uses an estimated v<sub>b,0</sub> = ${vb0} m/s for ${locName}.
+    The designer must verify this value against <strong>UK NA Figure NA.1</strong> before use in any structural design.
+    c<sub>dir</sub> = 1.0 (conservative, all directions). Results apply to the critical orthogonal wind direction only.
+    This tool is for preliminary design guidance and does not replace a full assessment by a qualified structural engineer.
+  </div>`;
+
+  document.getElementById('report-content').innerHTML=html;
+  showTab('report',document.querySelectorAll('.tab')[1]);
+}
+
+// ── Save / load inputs ────────────────────────────────────────────────────
+const INPUT_IDS=['location','vb0','altitude','distShore','inTown','terrain','co',
+  'bldgL','bldgW','bldgH','roofType','pitch','monoWind','cscd','cpiType','cfMethod'];
+
+function saveInputs(){
+  const data={};
+  INPUT_IDS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.value;});
+  const fname=(document.getElementById('saveFilename').value.trim()||'wind-calc')+'.json';
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
+}
+function loadInputs(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      INPUT_IDS.forEach(id=>{if(data[id]!==undefined){const el=document.getElementById(id);if(el)el.value=data[id];}});
+      toggleRoofInputs();
+      alert('Inputs loaded successfully.');
+    }catch(err){alert('Could not parse file \u2014 make sure it is a valid JSON saved from this app.');}
+  };
+  reader.readAsText(file);
+}
+
+// ── Download HTML report ──────────────────────────────────────────────────
+function downloadReport(){
+  const content=document.getElementById('report-content').innerHTML;
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Wind Load Report</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;padding:2rem;max-width:960px;margin:0 auto}
+h2{font-size:16px;font-weight:600;border-bottom:1px solid #ccc;padding-bottom:6px;margin:1.5rem 0 0.75rem}
+.step-block{background:#f5f5f3;border:1px solid #ddd;border-radius:6px;padding:0.75rem 1rem;margin-bottom:0.5rem}
+.step-block .title{font-size:13px;font-weight:600;margin-bottom:4px}
+.step-block .eq{font-family:'Courier New',monospace;font-size:12px;color:#444;white-space:pre-wrap;line-height:1.7}
+.zone-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:1rem}
+.zone-table th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;padding:7px 10px;border-bottom:2px solid #ccc}
+.zone-table td{padding:6px 10px;border-bottom:1px solid #eee}
+.metric-card{background:#f5f5f3;border:1px solid #ddd;border-radius:6px;padding:0.75rem;display:inline-block;min-width:120px;margin:4px}
+.metric-label{font-size:11px;color:#666;text-transform:uppercase}
+.metric-value{font-size:22px;font-weight:600}
+.grid4{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+.warn-box{background:#faeeda;border:1px solid #e6b84a;border-radius:6px;padding:0.75rem;font-size:13px;color:#7a4e00;margin-top:1rem}
+.info-box{background:#e8f4fc;border:1px solid #b0cce8;border-radius:6px;padding:0.75rem;font-size:13px;color:#1a4f80;margin-bottom:1rem}
+.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.method-card{border:1px solid #ccc;border-radius:8px;padding:1rem}
+.method-card.featured{border-color:#4a90d9;border-width:2px}
+.method-card h3{font-size:14px;font-weight:600;margin-bottom:0.75rem}
+.print-row,.print-btn,.btn-secondary{display:none}
+.report-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.report-subtitle{font-size:13px;color:#666;margin-bottom:1.5rem}
+</style></head><body>${content}</body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='wind-load-report.html';a.click();
+}
+</script>
+</body>
+</html>
